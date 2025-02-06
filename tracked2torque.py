@@ -18,25 +18,24 @@ def tracked_2_torque(trckd_file='',
                      stretch_xy_plots=False,
                      filter_name='median', 
                      filter_win=101,
-                     plots_torque=False
-                     ):
+                     plots_torque=False ):
     ''' calls to get torque (and speed, filtered) from the tracked .tdms file (both FP or TF tracker) '''
     t2xy = tracked2xy.Tracked_2_XY(trckd_file=trckd_file, 
                                    roi_num=roi_num, 
                                    plots_xy=plots_xy)
     xy2t = xy2torque.XY_2_Torque(t2xy.x, 
-                               t2xy.y,
-                               bead_diam_m=bead_diam_m,
-                               FPS=t2xy.FPS,
-                               umppx=umppx,
-                               rm_drift=rm_drift, 
-                               rm_drift_pts=rm_drift_pts, 
-                               rm_drift_mode=rm_drift_mode,
-                               rm_drift_plots=rm_drift_plots,
-                               stretch_xy=stretch_xy, 
-                               stretch_xy_plots=stretch_xy_plots,
-                               dist_beadsurf_wall=dist_beadsurf_wall,
-                               filter_name=filter_name, 
-                               filter_win=filter_win,
-                               plots=plots_torque)
-
+                                 t2xy.y,
+                                 bead_diam_m=bead_diam_m,
+                                 FPS=t2xy.FPS,
+                                 umppx=umppx,
+                                 rm_drift=rm_drift, 
+                                 rm_drift_pts=rm_drift_pts, 
+                                 rm_drift_mode=rm_drift_mode,
+                                 rm_drift_plots=rm_drift_plots,
+                                 stretch_xy=stretch_xy, 
+                                 stretch_xy_plots=stretch_xy_plots,
+                                 dist_beadsurf_wall=dist_beadsurf_wall,
+                                 filter_name=filter_name, 
+                                 filter_win=filter_win,
+                                 plots=plots_torque)
+    return xy2t
