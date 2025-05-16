@@ -34,8 +34,7 @@ class Tracked_2_XY():
     def get_trck(self):
         '''Get tracked data from trckd_file, from
             FP tracker ('_Trckd.tdms') or
-            TF tracker ('trajectory.pt')
-        '''
+            TF tracker ('trajectory.pt') '''
         # FP tracker:
         if self.trckd_file.endswith('_Trckd.tdms'):
             print(f'get_trck(): FP-tracked file: {self.trckd_file}')
@@ -68,7 +67,7 @@ class Tracked_2_XY():
             y_key = f'/ROI{roi_num}_Trk/Y{roi_num}'
             self.x = self.trckd[x_key][c0:c1]
             self.y = self.trckd[y_key][c0:c1]
-            print(f'get_roi(): roi_num:{roi_num}, found x,y of {len(self.x)} pts')
+            print(f'get_roi(): roi_num:{roi_num}; found x,y of {len(self.x)} pts; interval [c0:c1]: [{c0}:{c1}]')
             # get FPS:
             fps_idx_start = self.trckd['/CL-config/#X'][0].find('Frame Rate : ') + len('Frame Rate : ')
             fps_idx_end = self.trckd['/CL-config/#X'][0].find('\r', fps_idx_start)

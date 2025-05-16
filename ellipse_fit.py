@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from numpy.linalg import eig, inv
 
+
 def stretch_ellipse(x,y, plots=False):
     ''' fit ellipse, stretch it to be circular, center to origin. 
     stretches the short axis to become equal to the long axis '''
@@ -29,6 +30,7 @@ def stretch_ellipse(x,y, plots=False):
         plt.plot(x_out, y_out, ',', ms=1, alpha=0.1)
         plt.title(f'rotated and stretched to a circle', fontsize=9)
         plt.axis('equal')
+        plt.tight_layout()
     return x_out, y_out #, a, b
 
 
