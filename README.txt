@@ -4,6 +4,8 @@ This is the collection of the scripts we use to analyze BFM data from our bead a
 
 Example:
     
+    import tracked2torque
+    
     # TF tracker: file should be the folder, eg:
     file_to_open = '/home/francesco/ADYN/DATA/Amelie/240626/CL_240626_161019/'
     
