@@ -15,24 +15,22 @@ class XY_2_Torque():
                  FPS=1, 
                  umppx=1,
                  correction_functions_order=['rm_outliers', 'rm_drift', 'stretch_xy'],
-                 #rm_outliers=False,
                  rm_outliers_findparam=3,
                  rm_outliers_win=5,
                  rm_outliers_plots=False,
-                 #rm_drift=False, 
                  rm_drift_mode='linear', 
                  rm_drift_pts=100, 
                  rm_drift_plots=False, 
-                 #stretch_xy=False, 
                  stretch_xy_plots=False, 
                  dist_beadsurf_wall=50e-6,
                  filter_name='savgol', 
                  filter_win=101,
                  plots=False):
         ''' From x,y to torque. Take the (elliptical and drifting) rotating bead trajetory x(t),y(t) and:
-                o) correct outlier points
-                o) correct drift
-                o) rotate and stretch the trajectory into a circle
+                o) in the desidered order:
+                    - correct outlier points
+                    - correct drift
+                    - rotate and stretch the trajectory into a circle
                 o) calculate the angle Vs time
                 o) calculate the angular speed Vs time 
                 o) calculate the bead drag coefficient, with corrections due to surface proximity
@@ -44,7 +42,7 @@ class XY_2_Torque():
             bead_diam_m [1e-6]      : bead diameter
             FPS [1]                 : sampling rate, frames (points) per second. Used to calculate the speed.
             umppx [1]               : microns per pixel. Used to convert x,y to [m]eters. Use the defualt value of 1 if x,y are already given in [m].
-            correction_functions_order ['rm_outliers', 'rm_drift', 'stretch_xy'] : list of correction functions names (if any), giving their order of execution
+            correction_functions_order ['rm_outliers', 'rm_drift', 'stretch_xy'] : list of correction functions names (if any), giving their order of execution.
             #rm_outliers [False]       : remove oulier points in x,y
             rm_outliers_findparam [3]  : parameter to find outliers
             rm_outliers_win [3]        : window in pts to correct outliers        
@@ -69,21 +67,17 @@ class XY_2_Torque():
         self.FPS=FPS 
         self.umppx=umppx
         self.correction_functions_order=correction_functions_order
-        #self.rm_outliers=rm_outliers
         self.rm_outliers_findparam=rm_outliers_findparam
         self.rm_outliers_win=rm_outliers_win
         self.rm_outliers_plots=rm_outliers_plots
-        #self.rm_drift=rm_drift 
         self.rm_drift_mode=rm_drift_mode 
         self.rm_drift_pts=rm_drift_pts 
         self.rm_drift_plots=rm_drift_plots
-        #self.stretch_xy=stretch_xy  
         self.stretch_xy_plots=stretch_xy_plots
         self.dist_beadsurf_wall=dist_beadsurf_wall
         self.filter_name=filter_name
         self.filter_win=filter_win
         self.plots=plots
-        
         assert len(x)==len(y), 'Error: len(x) not equal to len(y)'
         self.correction_functions = {'rm_drift': self.remove_drift_funct, 'rm_outliers': self.remove_outliers_funct, 'stretch_xy': self.stretch_xy_funct}
         self.workflow()
@@ -205,13 +199,15 @@ class XY_2_Torque():
         self.x_rmdrift = filters.rm_interpolate(x, pts=self.rm_drift_pts, mode=self.rm_drift_mode, plots=self.rm_drift_plots, plot_signame='x')
         self.y_rmdrift = filters.rm_interpolate(y, pts=self.rm_drift_pts, mode=self.rm_drift_mode, plots=self.rm_drift_plots, plot_signame='y')
         return self.x_rmdrift.copy(), self.y_rmdrift.copy()
-    
+   
+
 
     def remove_outliers_funct(self, x, y):
         print(f'remove_outliers_funct(): removing outliers (win:{self.rm_outliers_win} findparam:{self.rm_outliers_findparam})')
         self.x_rmoutliers = filters.outlier_smoother(x, m=4, win=3, plots=self.rm_outliers_plots, figname='rm_outliers x')[0]    
         self.y_rmoutliers = filters.outlier_smoother(y, m=4, win=3, plots=self.rm_outliers_plots, figname='rm_outliers y')[0]  
         return self.x_rmoutliers.copy(), self.y_rmoutliers.copy()
+
 
 
     def stretch_xy_funct(self, x, y): 
