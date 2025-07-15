@@ -4,7 +4,7 @@ eta = 0.001   # [Pa*s] = [N*s/m^2] water viscosity
 
 
 
-def cal_drag(speed_Hz, traj_radius_m, bead_diam_m, dist_beadsurf_wall):
+def cal_drag(traj_radius_m, bead_diam_m, dist_beadsurf_wall):
     ''' calculate corrected drag of a rotating and translating bead (moon-like)
             - of radius "bead_radius" [m], 
             - rotating on a horizontal circular trajectory whose center is displaced by "axis_offset" [m] from the bead center,
