@@ -2,6 +2,58 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
+#TODO
+def correct_sig_modulation(sig, angle_turns, method='poly', polydeg=10, add='mean', interp_pts=100, plots=False, plots_figname='', plot_ss=30, plots_test=False, return_all=False):
+    '''correct the 1-turn periodic modulation (for a signal of the BFM eg: omega, z, radius), 
+       by removing a polynome fit of sig Vs mod(angle_turns,1).
+         sig, angle_turns: any signal and relative angle_turns trace (they have same length)
+         method: 'poly' polynome fit, 'interp' interpolation
+         polydeg : polyn degree to fit
+         add : ['mean', 'max'] value to add to the corrected signal. If add==None, then np.mean(sig) is added. But if sig=radius of xy traj, it should  be different TODO what?
+         interp_pts : numb of point to use to interpolate
+         plot_ss: subsample when plotting
+    return signal corrected
+    '''
+    if add == 'mean':
+        _add = np.mean(sig)
+    # angle turns in 0,1:
+    am  = np.mod(angle_turns - angle_turns[0], 1)
+    if method == 'poly':
+        # polyn fit:
+        pf = np.polyfit(am, sig, polydeg)
+        po = np.poly1d(pf)
+        if add == 'max':
+            _add = np.max(po(am))
+        # sig corrected:
+        sig_corr = sig - po(am) + _add
+    elif method == 'interp':
+        sig_corr, interp_f = rm_interpolate_xy(am, sig, npts=interp_pts, add=add, plots=plots)
+    if plots :
+        if plots_figname:
+            plt.figure(plots_figname, clear=True)
+        else:
+            plt.figure('correct_sig_modulation', clear=True)
+        plt.subplot(321)
+        plt.plot(sig[::plot_ss], '-', alpha=0.8, label='sig.raw')
+        plt.plot(sig_corr[::plot_ss], '-', alpha=0.6, label='sig.corr')
+        plt.legend(fontsize=9)
+        plt.subplot(322)
+        plt.plot(angle_turns[::plot_ss], '.', ms=2, label='angle_turns')
+        plt.legend(fontsize=9)
+        plt.subplot(312)
+        if method == 'poly':
+            plt.plot(am[::plot_ss], sig[::plot_ss], ',', ms=1, alpha=0.3, label='sig.raw')
+            plt.plot(am[::plot_ss], po(am)[::plot_ss], ',', ms=2, label='poly.fit')
+        plt.xlabel('angle_turns mod 1')
+        plt.legend(fontsize=9)
+        plt.subplot(313)
+        if method == 'poly':
+            plt.plot(am[::plot_ss], sig_corr[::plot_ss], ',', ms=1, alpha=0.3, label='sig.corr.')
+        plt.xlabel('angle_turns mod 1')
+        plt.legend(fontsize=9)
+        plt.tight_layout()
+    return sig_corr
+
 
 
 def CKfilter(signal, K=5, M=5, p=3, plots=0):
@@ -35,10 +87,6 @@ def CKfilter(signal, K=5, M=5, p=3, plots=0):
         plt.plot(signal, '.', ms=1)
         plt.plot(filtered_sig)
     return filtered_sig
-
-
-
-
 
 
 
@@ -106,7 +154,7 @@ def rm_interpolate(sig, p0=None, p1=None, pts=10, mode='spline', plot_signame=''
         sig_out = detrend(sig) + sigpts[0]
         interp = sig - sig_out + sigpts[0]
     if plots:
-        if len(sig) > 1000000:
+        if len(sig) > 500000:
             dw = 50
         else:
             dw = 1
@@ -117,11 +165,11 @@ def rm_interpolate(sig, p0=None, p1=None, pts=10, mode='spline', plot_signame=''
         ax1.plot(idxs, sigpts, 'o', mfc='none', label='interp. pts')
         ax1.plot(sigidx[::dw], interp[::dw], label='interpolation')
         ax1.set_ylabel('sig', fontsize=14)
-        ax1.legend()
+        ax1.legend(fontsize=9)
         ax2.plot(sigidx[::dw], sig_out[::dw], '.', ms=2, alpha=0.2, label='corrected')
         ax2.set_ylabel('sig', fontsize=14)
         ax2.set_xlabel('index', fontsize=14)
-        ax2.legend()
+        ax2.legend(fontsize=9)
     return sig_out
 
 
@@ -147,13 +195,14 @@ def outlier_smoother(x, m=3, win=3, plots=False, figname=''):
         k += 1
     if k>0: print()
     if plots:
+        dw = 50 if len(x) > 500_000 else 1
         fig = plt.figure(f'outlier_smoother '+figname, clear=True)
         ax1 = fig.add_subplot(211)
-        ax1.plot(x, label='orig.', lw=2)
+        ax1.plot(np.arange(0, len(x), dw), x[::dw], label='orig.', lw=2)
         ax1.plot(idxs_outliers, x[idxs_outliers], 'ro', label='outliers')
-        ax1.legend(loc='upper left', framealpha=0.3)
+        ax1.legend(loc='upper left', framealpha=0.3, fontsize=9)
         ax2 = fig.add_subplot(212, sharex=ax1)
-        ax2.plot(x_corr, '-o', label='corrected')
-        ax2.legend(loc='upper left', framealpha=0.3)
+        ax2.plot(np.arange(0, len(x), dw), x_corr[::dw], '-o', label='corrected')
+        ax2.legend(loc='upper left', framealpha=0.3, fontsize=9)
     return x_corr, len(idxs_outliers)
 
