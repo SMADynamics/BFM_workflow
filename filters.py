@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-#TODO
+#TODO adjust and use:
 def correct_sig_modulation(sig, angle_turns, method='poly', polydeg=10, add='mean', interp_pts=100, plots=False, plots_figname='', plot_ss=30, plots_test=False, return_all=False):
     '''correct the 1-turn periodic modulation (for a signal of the BFM eg: omega, z, radius), 
        by removing a polynome fit of sig Vs mod(angle_turns,1).
@@ -55,10 +55,9 @@ def correct_sig_modulation(sig, angle_turns, method='poly', polydeg=10, add='mea
     return sig_corr
 
 
-
+# TODO: careful I see arteftacts, at the beg and end of the filtered trace, few points out of the trace, going down. rm avg does not rm arteftacts.
 def CKfilter(signal, K=5, M=5, p=3, plots=0):
-    ''' by AN 2025
-    This code was adapted from my Matlab code, 2012
+    ''' by AN 2025. This code was adapted from my Matlab code, 2012
     Algorithm from Chung & Kennedy,
     Forward-backward non-linear filtering technique for extracting small biological signals from noise,
     J Neurosci Meth, 1991
@@ -128,9 +127,11 @@ def median_filter(x, win=10, fs=1, usemode='reflect', plots=False):
 
 
 
-def rm_interpolate(sig, p0=None, p1=None, pts=10, mode='spline', plot_signame='', plots=False):
+def rm_interpolate(sig, p0=None, p1=None, pts=10, mode='spline', qty='funct', qty_funct=np.median, plot_signame='', plots=False):
     ''' remove interpolation made of pts from sig[p0:p1]
         mode = 'spline' or 'linear'
+        qty : ['median'|'min'|'funct'] quantity to calculate in each window
+        if 'funct', then pass function in qty_funct, eg qty_funct=np.min
         see also: rm_interpolate_xy()
     '''
     # crop sig:
@@ -138,8 +139,17 @@ def rm_interpolate(sig, p0=None, p1=None, pts=10, mode='spline', plot_signame=''
     # pick up pts points along sig by avg:
     idxs = np.linspace(0, len(sig)-1, pts, endpoint=1).astype(int)
     dd = np.diff(idxs)[0]
-    sigpts = np.array([np.median(sig[i:i + dd]) for i in idxs])
-    sigpts[-1] = np.median(sig[-dd:])
+    if qty == 'median':
+        sigpts = np.array([np.median(sig[i:i + dd]) for i in idxs])
+        sigpts[-1] = np.median(sig[-dd:])
+    elif qty == 'min':
+        sigpts = np.array([np.min(sig[i:i + dd]) for i in idxs])
+        sigpts[-1] = np.min(sig[-dd:])
+    elif qty == 'funct':
+        sigpts = np.array([qty_funct(sig[i:i + dd]) for i in idxs])
+        sigpts[-1] = qty_funct(sig[-dd:])
+    else:
+        print('rm_interpolate_xy(): ERROR "qty" not defined.')
     sigidx = range(0, len(sig))
     if mode == 'spline':
         from scipy.interpolate import splev

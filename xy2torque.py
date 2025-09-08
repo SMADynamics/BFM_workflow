@@ -220,7 +220,7 @@ class XY_2_Torque():
         print('XY_2_Torque.workflow(): Done.')
     
     
-
+    # TODO insert here and in callers "qty" qnd "qty_funct", see filters.py/rm_interpolate() 
     def remove_drift_funct(self, x, y, store_corr=True):    
         print(f'remove_drift_funct(): removing drift {self.rm_drift_mode}')
         if store_corr:
