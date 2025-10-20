@@ -196,28 +196,35 @@ def openTdmsOneROI(filename, prints=False):
     if '/CL-config/#X' in d:
         CLconfig = d['/CL-config/#X'][0]
     else:
-        print('        openTdmsOneROI : ERROR, configuration not found')
+        print('openTdmsOneROI(): ERROR, configuration not found')
     if prints:
-        print(CLconfig)
+        print(f'openTdmsOneROI): CLconfig: {CLconfig.replace("\r\n","; ")}')
     # find frame size (tuple) :  
     re_framesize = re.search(r'Frame Size : (\d+),(\d+)', CLconfig)
     if re_framesize:
         framesize = (int(re_framesize.groups()[0]), int(re_framesize.groups()[1]))
-        if prints: print('        Frame size = '+str(framesize))
+        if prints: print('openTdmsOneROI(): Frame size = '+str(framesize))
     else:
-        print('        openTdmsOneROI : ERROR framesize')
+        print('openTdmsOneROI(): ERROR framesize')
     # find number of ROIs (int):
     re_nrois = re.search(r'Number of ROI : ([1-4])', CLconfig)
     nrois = int(re_nrois.groups()[0])
-    if prints: print('        Num. ROIs = ' + str(nrois))
+    if prints: 
+        print('openTdmsOneROI(): Num. ROIs = ' + str(nrois))
+    # find FPS:
+    re_fps = re.search(r'Frame Rate : (\d+)', CLconfig)
+    FPS = int(re_fps.groups()[0])
+    if prints: 
+        print(f'openTdmsOneROI(): FPS: {FPS}')
     # find all images and reshape to 2D:
     if '/CLImg/ROIs' in d:
         imgs = np.array(d['/CLImg/ROIs'])
         imgs = np.reshape(imgs, (int(len(imgs)/(framesize[0]*framesize[1]*nrois)), framesize[1]*nrois, framesize[0]))
-        if prints: print('        Num. of frames = '+str(imgs.shape[0]))
+        if prints: 
+            print('openTdmsOneROI(): Num. of frames = '+str(imgs.shape[0]))
     else:
-        print('        openTdmsOneROI : ERROR no images found')
-    return imgs
+        print('openTdmsOneROI(): ERROR no images found')
+    return imgs, FPS
 
 
 

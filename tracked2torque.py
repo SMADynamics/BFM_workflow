@@ -1,7 +1,9 @@
 # calls to get torque (and speed, filtered) from the tracked .tdms file (both FP or TF tracker)
 
+import numpy as np
 import tracked2xy
 import xy2torque
+
 
 
 
@@ -19,6 +21,8 @@ def tracked_2_torque(trckd_file='',
                      rm_outliers_plots=False,
                      rm_drift_mode='linear',
                      rm_drift_pts=100, 
+                     rm_drift_qty='median',
+                     rm_drift_qty_funct=np.median,
                      rm_drift_plots=False,
                      stretch_xy_plots=False,
                      filter_name='median', 
@@ -56,6 +60,8 @@ def tracked_2_torque(trckd_file='',
                                  rm_outliers_plots=rm_outliers_plots,
                                  rm_drift_pts=rm_drift_pts, 
                                  rm_drift_mode=rm_drift_mode,
+                                 rm_drift_qty=rm_drift_qty,
+                                 rm_drift_qty_funct=rm_drift_qty_funct,
                                  rm_drift_plots=rm_drift_plots,
                                  stretch_xy_plots=stretch_xy_plots,
                                  dist_beadsurf_wall_m=dist_beadsurf_wall_m,
@@ -63,4 +69,8 @@ def tracked_2_torque(trckd_file='',
                                  filter_win=filter_win,
                                  plots=plots_torque,
                                  store_corr=store_corr)
+    xy2tq.trckd_file = tr2xy.trckd_file
+    xy2tq.c0 = tr2xy.c0
+    xy2tq.c1 = tr2xy.c1
+
     return xy2tq

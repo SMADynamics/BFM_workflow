@@ -126,12 +126,12 @@ def median_filter(x, win=10, fs=1, usemode='reflect', plots=False):
     return y
 
 
-
-def rm_interpolate(sig, p0=None, p1=None, pts=10, mode='spline', qty='funct', qty_funct=np.median, plot_signame='', plots=False):
-    ''' remove interpolation made of pts from sig[p0:p1]
+# WARNING added 'qty' and 'qty_funct'. TODO update callers:
+def rm_interpolate(sig, p0=None, p1=None, pts=10, mode='spline', qty='funct', qty_funct=np.median, plot_signame='', plots=False, plot_suptitle=None):
+    ''' remove (spline or linear) interpolation made of a number 'pts' points from sig[p0:p1]
         mode = 'spline' or 'linear'
-        qty : ['median'|'min'|'funct'] quantity to calculate in each window
-        if 'funct', then pass function in qty_funct, eg qty_funct=np.min
+        qty : ['median'|'min'|'max'|'funct'] the quantity to calculate in each window to produce the points for the interpolation.
+        If qty='funct', then a function in 'qty_funct' must be provided (eg: qty_funct = np.mean)
         see also: rm_interpolate_xy()
     '''
     # crop sig:
@@ -144,6 +144,9 @@ def rm_interpolate(sig, p0=None, p1=None, pts=10, mode='spline', qty='funct', qt
         sigpts[-1] = np.median(sig[-dd:])
     elif qty == 'min':
         sigpts = np.array([np.min(sig[i:i + dd]) for i in idxs])
+        sigpts[-1] = np.min(sig[-dd:])
+    elif qty == 'max':
+        sigpts = np.array([np.max(sig[i:i + dd]) for i in idxs])
         sigpts[-1] = np.min(sig[-dd:])
     elif qty == 'funct':
         sigpts = np.array([qty_funct(sig[i:i + dd]) for i in idxs])
@@ -180,6 +183,7 @@ def rm_interpolate(sig, p0=None, p1=None, pts=10, mode='spline', qty='funct', qt
         ax2.set_ylabel('sig', fontsize=14)
         ax2.set_xlabel('index', fontsize=14)
         ax2.legend(fontsize=9)
+        fig.suptitle(plot_suptitle, fontsize=8)
     return sig_out
 
 
