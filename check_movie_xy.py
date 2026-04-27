@@ -11,11 +11,21 @@ from tracked2torque import tracked_2_torque as t2t
 
 class CheckVideo():
 
-    def __init__(self, video_file_tdms='/home/francesco/PHYSMECHBIO/DATA/Simon/BA_campy/250926/CL_250926_111534.tdms', 
-                 c0_trace=None, c1_trace=None, 
-                 c0_trace_part=None, c1_trace_part=None, 
-                 c0_frames=0, c1_frames=10, c2_frames=1):
+    def __init__(self, 
+                 video_file_tdms='/home/francesco/PHYSMECHBIO/DATA/Simon/BA_campy/250926/CL_250926_111534.tdms', 
+                 tracked_file=None,
+                 roi_num=None,
+                 c0_trace=None, 
+                 c1_trace=None, 
+                 c0_trace_part=None, 
+                 c1_trace_part=None, 
+                 c0_frames=0, 
+                 c1_frames=10, 
+                 c2_frames=1,
+                 memmap_dir=None):
         self.video_file_tdms = video_file_tdms
+        self.trckd_file = tracked_file
+        self.roi_num = roi_num
         self.c0_trace = c0_trace
         self.c1_trace = c1_trace
         self.c0_trace_part = c0_trace_part
@@ -23,21 +33,22 @@ class CheckVideo():
         self.c0_frames = c0_frames
         self.c1_frames = c1_frames
         self.c2_frames = c2_frames
+        self.memmap_dir = memmap_dir
         self.load_tracked_data()
         self.load_video_FPS()
 
 
     def load_video_FPS(self):
         ''' load video and FPS in tdms file '''
-        print('load_video_FPS(): loading video ...')
-        self.video, self.FPS = openTDMS.openTdmsOneROI(self.video_file_tdms, prints=True)
+        print(f'CheckVideo.load_video_FPS(): loading video {self.video_file_tdms} ...')
+        self.video, self.FPS = openTDMS.openTdmsOneROI(self.video_file_tdms, memmap_dir=self.memmap_dir, prints=True)
 
 
     def load_tracked_data(self):
         ''' load tracked 2 torque data'''
-        self.trckd_path = self.video_file_tdms.strip('.tdms')+'/'
+        self.trckd_path = self.video_file_tdms.strip('.tdms')+'/' if self.trckd_file is None else self.trckd_file
         self.tt = t2t(trckd_file=self.trckd_path,
-                      roi_num=0,
+                      roi_num=self.roi_num,
                       c0=self.c0_trace, 
                       c1=self.c1_trace,
                       plots_xy=0,
@@ -68,7 +79,7 @@ class CheckVideo():
         nframes = (c1 - c0)/c2
         nframes = len(range(c0,c1,c2))
         xrowscols = int(np.ceil(np.sqrt(nframes)))
-        print(f'show_video_frames(): numb. of frames: {xrowscols**2}, [{c0}:{c1}:{c2}]')
+        print(f'CheckVideo.show_frames(): numb. of frames: {xrowscols**2}, [{c0}:{c1}:{c2}]')
         fig_frames, axs_frames = plt.subplots(xrowscols, xrowscols, squeeze=False, num='show_video_frames', clear=True)
         i = 0
         for axr_frames in axs_frames:

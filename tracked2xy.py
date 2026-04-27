@@ -19,8 +19,8 @@ class Tracked_2_XY():
         self.roi_num = roi_num
         self.c0 = c0
         self.c1 = c1
+        print(f'Tracked_2_XY.__init__(): trckd_file: {trckd_file}; roi_num: {roi_num}; c0: {c0}; c1: {c1}')
         self.workflow(plots_xy=plots_xy)
-
 
 
     def workflow(self, plots_xy=False):
@@ -30,31 +30,41 @@ class Tracked_2_XY():
             self.plots_xy()
 
 
-
     def get_trck(self):
         '''Get tracked data from trckd_file, from
-            FP tracker ('_Trckd.tdms') or
-            TF tracker ('trajectory.pt') '''
-        # FP tracker:
+            FP tracker ('/CL*_Trckd.tdms') or
+            TF tracker ('/trajectory.pt') '''
+        # FP tracker :
         if self.trckd_file.endswith('_Trckd.tdms'):
-            print(f'get_trck(): FP-tracked file: {self.trckd_file}')
+            print(f'Tracked_2_XY.get_trck(): FP-tracked file: {self.trckd_file}')
             self.trckd = openTDMS.openTdmsFile(self.trckd_file)
-            print(f'get_trck(): keys found: {self.trckd.keys()}')
+            print(f'Tracked_2_XY.get_trck(): keys found: {self.trckd.keys()}')
             nrois = re.search(r'Number of ROI : (\d)', self.trckd['/CL-config/#X'][0]).group(1)
-            print(f'get_trck(): Num. or ROIs: {nrois}')
+            print(f'Tracked_2_XY.get_trck(): Num. or ROIs: {nrois}')
         # TF tracker:
         else:
-            directory = os.path.split(self.trckd_file)[0]
-            file = os.path.split(self.trckd_file)[1].strip('.tdms')
-            self.trckd = torch.load(directory + '/' + file + '/' + str(self.roi_num) + '/trajectory.pt')
-            metadata_file = open(directory + '/' + file + '/' + 'metadata.json')
-            self.metadata = json.load(metadata_file)
-            print(f'get_trck(): TF-tracker file loaded.')
-            #print(f'get_trck(): TF-tracker metadata: {self.metadata}')
+            # if .tdms file provided:
+            if self.trckd_file.endswith('.tdms'):
+                directory     = os.path.split(self.trckd_file)[0]
+                file          = os.path.split(self.trckd_file)[1].removesuffix('.tdms')
+                traj_file     = os.path.join(directory, file, str(self.roi_num), 'trajectory.pt')
+                metadata_file = os.path.join(directory, file, 'metadata.json')
+            # if trajectory.pt file provided:
+            elif self.trckd_file.endswith('trajectory.pt'):
+                m = re.search(r'^(.*?/CL_[^/]+/)', self.trckd_file)
+                directory = m.group(1) if m else None
+                traj_file = self.trckd_file
+                metadata_file = os.path.join(directory, 'metadata.json')
+            print(f'Tracked_2_XY.get_trck(): TF-tracker traj_file: {traj_file}')
+            print(f'Tracked_2_XY.get_trck(): TF-tracker directory: {directory}')
+            print(f'Tracked_2_XY.get_trck(): TF-tracker metadata_file: {metadata_file}')
+            self.trckd = torch.load(traj_file)
+            self.metadata = json.load(open(metadata_file))
+            print(f'Tracked_2_XY.get_trck(): TF-tracker file loaded.')
+            #print(f'Tracked_2_XY.get_trck(): TF-tracker metadata: {self.metadata}')
 
 
-
-    def get_roi(self, c0=0, c1=-1, roi_num=1):
+    def get_roi(self, c0=0, c1=-1, roi_num=0):
         ''' get info (x,y,FPS) from ROI number 'roi_num' from tracked file
             (guessing FP or TF tracker)
         '''
@@ -65,25 +75,26 @@ class Tracked_2_XY():
             # get x,y:
             x_key = f'/ROI{roi_num}_Trk/X{roi_num}'
             y_key = f'/ROI{roi_num}_Trk/Y{roi_num}'
-            self.x = self.trckd[x_key][c0:c1]
-            self.y = self.trckd[y_key][c0:c1]
-            print(f'get_roi(): roi_num:{roi_num}; found x,y of {len(self.x)} pts; interval [c0:c1]: [{c0}:{c1}]')
+            self.x = np.float64(self.trckd[x_key][c0:c1])
+            self.y = np.float64(self.trckd[y_key][c0:c1])
+            print(f'Tracked_2_XY.get_roi(): roi_num:{roi_num}; found x,y of {len(self.x)} pts; type: {self.x.dtype}; interval [c0:c1]: [{c0}:{c1}]')
             # get FPS:
             fps_idx_start = self.trckd['/CL-config/#X'][0].find('Frame Rate : ') + len('Frame Rate : ')
             fps_idx_end = self.trckd['/CL-config/#X'][0].find('\r', fps_idx_start)
             self.FPS = float(self.trckd['/CL-config/#X'][0][fps_idx_start:fps_idx_end])
-            print(f'get_roi(): found FPS {self.FPS}')
+            print(f'Tracked_2_XY.get_roi(): found FPS {self.FPS}')
         # TF tracker files:
         else:
-            #self.trckd is a tensor in a dictionary with keys cx, cy and z.
-            self.x = self.trckd['cy'].numpy()[c0:c1]
-            self.y = self.trckd['cx'].numpy()[c0:c1]
+            #self.trckd is a tensor in a dictionary with keys cx, cy and z. 
+            # To float64 to avoid problems unwrapping the angle:
+            self.x = np.float64(self.trckd['cy'].numpy()[c0:c1])
+            self.y = np.float64(self.trckd['cx'].numpy()[c0:c1])
             self.FPS = float(self.metadata['Frame Rate'])
-            print(f'get_roi(): popultaed with x(t), y(t) (len: {len(self.x)}), and FPS={self.FPS}')
+            print(f'Tracked_2_XY.get_roi(): populated with x(t), y(t) (len: {len(self.x)} type: {self.x.dtype}), FPS={self.FPS}')
 
 
     def plots_xy(self):
-        fig = plt.figure('plots_xy', clear=True)
+        fig = plt.figure('Tracked_2_XY.plots_xy', clear=True)
         ax1 = fig.add_subplot(321)
         ax2 = fig.add_subplot(312)
         ax3 = fig.add_subplot(313)

@@ -134,7 +134,7 @@ def tdms_Trckd_to_pydic(path='', filelist=[], inspect=True, include_ROI0=False, 
     
 
 
-def openTdmsFile(filename, print_found=True):
+def openTdmsFile(filename, memmap_dir=None, print_found=True):
     ''' OLD nptdms versions 
     open a tdms file and put all its structure into a dictionary "d".
     to access the data of one channel, e.g.:
@@ -154,7 +154,9 @@ def openTdmsFile(filename, print_found=True):
     # nptdms newer versions:
     if version.parse(v) >= version.parse('1.1.0'):
         dout = {}
-        tdms_file = nptdms.TdmsFile.read(filename) # TODO .read puts all in memory while .open allows nmap and partial reading of data
+        print(f'openTdmsFile(): nptdms version {v} detected. Using memmap_dir={memmap_dir}')
+        tdms_file = nptdms.TdmsFile.read(filename, memmap_dir=memmap_dir) # TODO .read puts all in memory while .open allows nmap and partial reading of data
+        # tdms_file = nptdms.TdmsFile.open(filename, memmap_dir=memmap_dir)
         for group in tdms_file.groups():
             group_name = '/'+group.name
             for channel in group.channels():
@@ -186,12 +188,12 @@ def openTdmsFile(filename, print_found=True):
 
 
 
-def openTdmsOneROI(filename, prints=False):
+def openTdmsOneROI(filename, memmap_dir=None, prints=False):
     ''' open a movie in tdms file "filename", 
     using the config in "/CL-config/#X" (which must be in the .tdms file)
     returns one single image(t) with all the ROIs 
     '''
-    d = openTdmsFile(filename, print_found=prints)
+    d = openTdmsFile(filename, memmap_dir=memmap_dir, print_found=prints)
     # find camera configuration string:
     if '/CL-config/#X' in d:
         CLconfig = d['/CL-config/#X'][0]

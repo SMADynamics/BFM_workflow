@@ -1,6 +1,8 @@
 # calls to get torque (and speed, filtered) from the tracked .tdms file (both FP or TF tracker)
 
 import numpy as np
+import re 
+
 import tracked2xy
 import xy2torque
 
@@ -22,7 +24,7 @@ def tracked_2_torque(trckd_file='',
                      rm_drift_mode='linear',
                      rm_drift_pts=100, 
                      rm_drift_qty='median',
-                     rm_drift_qty_funct=np.median,
+                     rm_drift_qty_funct=None,
                      rm_drift_plots=False,
                      stretch_xy_plots=False,
                      filter_name='median', 
@@ -30,10 +32,9 @@ def tracked_2_torque(trckd_file='',
                      plots_torque=False,
                      store_corr=False ):
     ''' 
-        calls to get torque (and speed, filtered) from the tracked .tdms file (both FP or TF tracker) 
+    Calls to get torque (and speed, filtered) from the tracked file (both FP or TF tracker) 
         
-        Example:
-          
+        Example: 
             > file = '/home/francesco/ADYN/DATA/Amelie/240626/CL_240626_161019/'
             > tracked2torque.tracked_2_torque(trckd_file=file, roi_num=1, c0=1, c1=None, plots_xy=1, 
                         bead_diam_m=1e-6, dist_beadsurf_wall_m=10e-9, 
@@ -45,30 +46,33 @@ def tracked_2_torque(trckd_file='',
                         plots_torque=True)
     '''
     tr2xy = tracked2xy.Tracked_2_XY(trckd_file=trckd_file, 
-                                   roi_num=roi_num, 
-                                   c0=c0, 
-                                   c1=c1,
-                                   plots_xy=plots_xy)
+                                    roi_num=roi_num, 
+                                    c0=c0, 
+                                    c1=c1,
+                                    plots_xy=plots_xy)
+    m = re.search(r'(CL_[^/]+)', trckd_file)
+    figname = m.group(1) if m else None
     xy2tq = xy2torque.XY_2_Torque(tr2xy.x, 
-                                 tr2xy.y,
-                                 bead_diam_m=bead_diam_m,
-                                 FPS=tr2xy.FPS,
-                                 umppx=umppx,
-                                 correction_functions_order=correction_functions_order,
-                                 rm_outliers_findparam=rm_outliers_findparam,
-                                 rm_outliers_win=rm_outliers_win,
-                                 rm_outliers_plots=rm_outliers_plots,
-                                 rm_drift_pts=rm_drift_pts, 
-                                 rm_drift_mode=rm_drift_mode,
-                                 rm_drift_qty=rm_drift_qty,
-                                 rm_drift_qty_funct=rm_drift_qty_funct,
-                                 rm_drift_plots=rm_drift_plots,
-                                 stretch_xy_plots=stretch_xy_plots,
-                                 dist_beadsurf_wall_m=dist_beadsurf_wall_m,
-                                 filter_name=filter_name, 
-                                 filter_win=filter_win,
-                                 plots=plots_torque,
-                                 store_corr=store_corr)
+                                  tr2xy.y,
+                                  bead_diam_m=bead_diam_m,
+                                  FPS=tr2xy.FPS,
+                                  umppx=umppx,
+                                  correction_functions_order=correction_functions_order,
+                                  rm_outliers_findparam=rm_outliers_findparam,
+                                  rm_outliers_win=rm_outliers_win,
+                                  rm_outliers_plots=rm_outliers_plots,
+                                  rm_drift_pts=rm_drift_pts, 
+                                  rm_drift_mode=rm_drift_mode,
+                                  rm_drift_qty=rm_drift_qty,
+                                  rm_drift_qty_funct=rm_drift_qty_funct,
+                                  rm_drift_plots=rm_drift_plots,
+                                  stretch_xy_plots=stretch_xy_plots,
+                                  dist_beadsurf_wall_m=dist_beadsurf_wall_m,
+                                  filter_name=filter_name, 
+                                  filter_win=filter_win,
+                                  plots=plots_torque,
+                                  plots_figname=figname,
+                                  store_corr=store_corr)
     xy2tq.trckd_file = tr2xy.trckd_file
     xy2tq.c0 = tr2xy.c0
     xy2tq.c1 = tr2xy.c1

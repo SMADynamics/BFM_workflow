@@ -32,8 +32,12 @@ class XY_2_Torque():
                  filter_name='savgol', 
                  filter_win=101,
                  plots=False,
+                 plots_figname=None,
                  store_corr=True):
-        ''' From x,y to torque. Take the (elliptical and drifting) rotating bead trajetory x(t),y(t) and:
+        ''' 
+            --- All the analysis from the bead (x,y) trajectory to motor torque ---
+
+            Take the (elliptical and drifting) rotating bead trajetory x(t),y(t) and:
                 o) in the desidered order:
                     - correct outlier points
                     - correct drift
@@ -45,11 +49,12 @@ class XY_2_Torque():
                 o) plot everything
             
             - Parameters:
-            x, y                    : xy positions of the bead [pixel]
-            bead_diam_m [1e-6]      : bead diameter
-            FPS [1]                 : sampling rate, frames (points) per second. Used to calculate the speed.
-            umppx [1]               : microns per pixel. Used to convert x,y to [m]eters. Use the defualt value of 1 if x,y are already given in [m].
-            correction_functions_order ['rm_outliers', 'rm_drift', 'stretch_xy'] : list of correction functions names (if any), giving their order of execution.
+            x, y                       : xy positions of the bead [pixel]
+            bead_diam_m [1e-6]         : bead diameter
+            FPS [1]                    : sampling rate, frames (points) per second. Used to calculate the speed.
+            umppx [1]                  : microns per pixel. Used to convert x,y to [m]eters. Use the defualt value of 1 if x,y are already given in [m].
+            correction_functions_order ['rm_outliers', 'rm_drift', 'stretch_xy'] 
+                                       : list of correction functions names (if any), giving their order of execution.
             rm_outliers_findparam [3]  : parameter to find outliers
             rm_outliers_win [3]        : window in pts to correct outliers        
             rm_outliers_plots          : Bool, to plot rm_outliers correction
@@ -63,6 +68,7 @@ class XY_2_Torque():
             filter_name ['savgol']     : 'savgol' or 'median', low pass filter for output torque trace
             filter_win [101]           : number of pts in filter window (odd number)
             plots [False]              : plot a summary of the results 
+            plots_figname [None]       : name of the figure for the summary plots
             store_corr                 : store all the various corrected x,y (in self.x_rmoutliers,x_rmdrift,x_circ), not only the last one (always stored in self.x_corr)
 
             TODO
@@ -88,7 +94,8 @@ class XY_2_Torque():
         self.filter_name=filter_name
         self.filter_win=filter_win
         self.plots=plots
-        assert len(x)==len(y), 'Error: len(x) not equal to len(y)'
+        self.plots_figname=plots_figname
+        assert len(x)==len(y), 'XY_2_Torque.__init__(): Error: len(x) not equal to len(y)'
         # define correction functions:
         self.correction_functions = {'rm_drift'   : lambda x, y: self.remove_drift_funct(x, y, store_corr=store_corr),
                                      'rm_outliers': lambda x, y: self.remove_outliers_funct(x, y, store_corr=store_corr),
@@ -103,7 +110,7 @@ class XY_2_Torque():
         y = self.y_orig.copy() * self.umppx*1e-6
         x -= np.median(x)
         y -= np.median(y)
-        
+        print(x.dtype, y.dtype)
         # make corrections in given order (by correction_functions_order):
         for funct in self.correction_functions_order:
             print(f'XY_2_Torque.workflow(): applying correction {funct} ...')
@@ -111,23 +118,17 @@ class XY_2_Torque():
         # store corrected x,y
         self.x_corr = x
         self.y_corr = y
-        
         # calculate angle(t) [turns]:
-        self.angle_turns = np.unwrap(np.arctan2(y - np.mean(y), x - np.mean(x)))/(2*np.pi)
-        
+        self.angle_turns = np.unwrap(np.arctan2(y, x))/(2*np.pi)
         # calculate speed [Hz]:
         self.speed_Hz = np.diff(self.angle_turns)*self.FPS
-            
         # calc radius of trajectory [m]:
         self.traj_radius_m = np.hypot(x, y)  
-        
         # calculate the bead drag coefficient:
         self.drag_pNnms = drag.cal_drag(self.traj_radius_m, self.bead_diam_m, self.dist_beadsurf_wall_m)
         print(f'XY_2_Torque.workflow(): Done angle(t), speed(t) traj_radius(t), drag(t)={np.mean(self.drag_pNnms):.3f} pNnms)')
-    
         # calculate the torque trace:
         self.torque_pNnm = self.drag_pNnms[:-1] * self.speed_Hz * 2*np.pi
-        
         # filter speed and torque traces:
         print(f'XY_2_Torque.workflow(): filtering torque and speed traces by {self.filter_name}, win:{self.filter_win}')
         if self.filter_name == 'savgol':
@@ -142,17 +143,16 @@ class XY_2_Torque():
         else: 
             self.torque_pNnm_filter = self.torque_pNnm
             self.speed_Hz_filter = self.speed_Hz
-        
         # plot everything:        
         if self.plots:
             print(f'XY_2_Torque.workflow(): Plotting all...')
             self.plots_all()
 
 
-
     def plots_all(self):
         ''' plot everything from self.workflow() '''
-        fig, d = plt.subplot_mosaic('''aawzcc\ndddeee\nfffffh\ngggggj''', num='xy2torque', clear=True)
+        fig, d = plt.subplot_mosaic('''aawzcc\ndddeee\nfffffh\ngggggj''', num='xy2torque '+self.plots_figname, clear=True, figsize=(9,10))
+        fig.suptitle(f'{self.plots_figname}', fontsize=8)
         ax1 = d['a']
         ax2 = d['w']
         ax3 = d['z']
@@ -164,7 +164,7 @@ class XY_2_Torque():
         ax7 = d['g']
         ax7a = d['j']
         t = np.arange(len(self.x_orig))/self.FPS
-        dw = 20 if len(self.x_orig) > 1_000_000 else 1
+        dw = 10 if len(self.x_orig) > 1_000_000 else 1
         t = t[::dw]
         ax1.plot(self.x_orig[::dw], self.y_orig[::dw], ',', alpha=0.5, label='original')
         ax1.plot(self.x_orig[1:500], self.y_orig[1:500], 'y-', lw=1, alpha=0.5, label='start')
@@ -235,9 +235,8 @@ class XY_2_Torque():
         print('XY_2_Torque.workflow(): Done.')
     
     
-    
     def remove_drift_funct(self, x, y, store_corr=True):    
-        print(f'remove_drift_funct(): removing drift. Mode:{self.rm_drift_mode}, pts:{self.rm_drift_pts}, qty:{self.rm_drift_qty}, funct:{self.rm_drift_qty_funct if self.rm_drift_qty == "funct" else None}')
+        print(f'XY_2_Torque.remove_drift_funct(): removing drift. Mode:{self.rm_drift_mode}, pts:{self.rm_drift_pts}, qty:{self.rm_drift_qty}, funct:{self.rm_drift_qty_funct if self.rm_drift_qty == "funct" else None}')
         if store_corr:
             self.x_rmdrift = filters.rm_interpolate(x, pts=self.rm_drift_pts, mode=self.rm_drift_mode, qty=self.rm_drift_qty, qty_funct=self.rm_drift_qty_funct, plots=self.rm_drift_plots, plot_signame='x')
             self.y_rmdrift = filters.rm_interpolate(y, pts=self.rm_drift_pts, mode=self.rm_drift_mode, qty=self.rm_drift_qty, qty_funct=self.rm_drift_qty_funct, plots=self.rm_drift_plots, plot_signame='y')
@@ -248,9 +247,8 @@ class XY_2_Torque():
             return x_rmdrift, y_rmdrift
 
    
-
     def remove_outliers_funct(self, x, y, store_corr=True):
-        print(f'remove_outliers_funct(): removing outliers (win:{self.rm_outliers_win} findparam:{self.rm_outliers_findparam})')
+        print(f'XY_2_Torque.remove_outliers_funct(): removing outliers (win:{self.rm_outliers_win} findparam:{self.rm_outliers_findparam})')
         if store_corr:
             self.x_rmoutliers = filters.outlier_smoother(x, m=4, win=3, plots=self.rm_outliers_plots, figname='rm_outliers x')[0]    
             self.y_rmoutliers = filters.outlier_smoother(y, m=4, win=3, plots=self.rm_outliers_plots, figname='rm_outliers y')[0]  
@@ -261,9 +259,8 @@ class XY_2_Torque():
             return x_rmoutliers, y_rmoutliers
 
 
-
     def stretch_xy_funct(self, x, y, store_corr=True): 
-        print(f'stretch_xy_funct(): stretching x,y to circle, {"NOT" if not store_corr else ""} storing')
+        print(f'XY_2_Torque.stretch_xy_funct(): stretching x,y to circle, {"NOT" if not store_corr else ""} storing')
         if store_corr:
             self.x_circ, self.y_circ = ellipse_fit.stretch_ellipse(x, y, plots=self.stretch_xy_plots)
             return self.x_circ.copy(), self.y_circ.copy()
