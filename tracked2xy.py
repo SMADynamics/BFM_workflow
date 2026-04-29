@@ -58,7 +58,7 @@ class Tracked_2_XY():
             print(f'Tracked_2_XY.get_trck(): TF-tracker traj_file: {traj_file}')
             print(f'Tracked_2_XY.get_trck(): TF-tracker directory: {directory}')
             print(f'Tracked_2_XY.get_trck(): TF-tracker metadata_file: {metadata_file}')
-            self.trckd = torch.load(traj_file)
+            self.trckd = torch.load(traj_file, weights_only=True)
             self.metadata = json.load(open(metadata_file))
             print(f'Tracked_2_XY.get_trck(): TF-tracker file loaded.')
             #print(f'Tracked_2_XY.get_trck(): TF-tracker metadata: {self.metadata}')

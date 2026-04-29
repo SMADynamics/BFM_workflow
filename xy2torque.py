@@ -22,12 +22,16 @@ class XY_2_Torque():
                  rm_outliers_findparam=3,
                  rm_outliers_win=5,
                  rm_outliers_plots=False,
-                 rm_drift_mode='linear', 
-                 rm_drift_pts=100, 
+                 stretch_xy_plots=False, 
+                 rm_drift_rmregions='auto',
+                 rm_drift_rmregions_extend=0,
+                 rm_drift_rmregions_thr=0.7,
+                 rm_drift_mode='polyfit',
+                 rm_drift_polyfit_deg=3, 
+                 rm_drift_wins=100, 
                  rm_drift_qty='median',
                  rm_drift_qty_funct=np.median,
                  rm_drift_plots=False, 
-                 stretch_xy_plots=False, 
                  dist_beadsurf_wall_m=50e-6, #### BROKEN??? this was changed from "dist_beadsurf_wall" 
                  filter_name='savgol', 
                  filter_win=101,
@@ -58,11 +62,17 @@ class XY_2_Torque():
             rm_outliers_findparam [3]  : parameter to find outliers
             rm_outliers_win [3]        : window in pts to correct outliers        
             rm_outliers_plots          : Bool, to plot rm_outliers correction
-            rm_drift_pts [100]         : number of pts to use in the interpolation for drift removal
+            rm_drift_wins [100]        : number of pts to use in the interpolation for drift removal
             rm_drift_plots [False]     : plot the rm_drift traces
-            rm_drift_mode              : 'linear' | 'spline' (see filters.)
-            rm_drift_qty               : 'median'|'max'|'min'|'funct' quantity to calculate in each window. If 'funct', then rm_drift_qty_funct must be provided.
-            rm_drift_qty_funct         : a call to a function, used to calculate the quantity in each window, eg: rm_drift_qty_funct=np.mean. Use of median,min,max is already in rm_drift_qty.
+            rm_drift_mode              : 'polyfit' | 'linear' | 'spline' , see filters.rm_interpolate()
+            rm_drift_qty               : 'median'|'max'|'min'|'funct' quantity to calculate in each window. 
+                                         If 'funct', then rm_drift_qty_funct must be provided.
+            rm_drift_qty_funct         : a call to a function, used to calculate the quantity in each window, eg: rm_drift_qty_funct=np.mean. 
+                                         Use of median,min,max is already in rm_drift_qty.
+            rm_drift_polyfit_deg [3]   : degree of the polynomial for 'polyfit' drift removal
+            rm_drift_rmregions ['auto'] : 'auto' or list of (start,end) pts to remove from the drift calculation
+            rm_drift_rmregions_thr     : threshold for automatic detection of regions to remove
+            rm_drift_rmregions_extend  : extend the regions to remove by this factor (eg. 0.5 will extend each region by 50% on each side)
             stretch_xy_plots           : plots relative to the xy stretch 
             dist_beadsurf_wall_m       : [50e-6] gap between the surface of the bead and the wall, used to correct the drag [m]
             filter_name ['savgol']     : 'savgol' or 'median', low pass filter for output torque trace
@@ -85,10 +95,14 @@ class XY_2_Torque():
         self.rm_outliers_win=rm_outliers_win
         self.rm_outliers_plots=rm_outliers_plots
         self.rm_drift_mode=rm_drift_mode 
-        self.rm_drift_pts=rm_drift_pts 
+        self.rm_drift_wins=rm_drift_wins 
         self.rm_drift_qty=rm_drift_qty
         self.rm_drift_qty_funct=rm_drift_qty_funct
         self.rm_drift_plots=rm_drift_plots
+        self.rm_drift_polyfit_deg=rm_drift_polyfit_deg
+        self.rm_drift_rmregions=rm_drift_rmregions
+        self.rm_drift_rmregions_thr=rm_drift_rmregions_thr
+        self.rm_drift_rmregions_extend=rm_drift_rmregions_extend
         self.stretch_xy_plots=stretch_xy_plots
         self.dist_beadsurf_wall_m=dist_beadsurf_wall_m
         self.filter_name=filter_name
@@ -110,7 +124,6 @@ class XY_2_Torque():
         y = self.y_orig.copy() * self.umppx*1e-6
         x -= np.median(x)
         y -= np.median(y)
-        print(x.dtype, y.dtype)
         # make corrections in given order (by correction_functions_order):
         for funct in self.correction_functions_order:
             print(f'XY_2_Torque.workflow(): applying correction {funct} ...')
@@ -236,14 +249,26 @@ class XY_2_Torque():
     
     
     def remove_drift_funct(self, x, y, store_corr=True):    
-        print(f'XY_2_Torque.remove_drift_funct(): removing drift. Mode:{self.rm_drift_mode}, pts:{self.rm_drift_pts}, qty:{self.rm_drift_qty}, funct:{self.rm_drift_qty_funct if self.rm_drift_qty == "funct" else None}')
+        print(f'XY_2_Torque.remove_drift_funct(): removing drift. Mode:{self.rm_drift_mode}, rm_regions:{self.rm_drift_rmregions}, rm_regions_thr:{self.rm_drift_rmregions_thr}, wins:{self.rm_drift_wins}, qty:{self.rm_drift_qty}, funct:{self.rm_drift_qty_funct if self.rm_drift_qty == "funct" else None}')
         if store_corr:
-            self.x_rmdrift = filters.rm_interpolate(x, pts=self.rm_drift_pts, mode=self.rm_drift_mode, qty=self.rm_drift_qty, qty_funct=self.rm_drift_qty_funct, plots=self.rm_drift_plots, plot_signame='x')
-            self.y_rmdrift = filters.rm_interpolate(y, pts=self.rm_drift_pts, mode=self.rm_drift_mode, qty=self.rm_drift_qty, qty_funct=self.rm_drift_qty_funct, plots=self.rm_drift_plots, plot_signame='y')
+            self.x_rmdrift = filters.rm_interpolate(x, wins=self.rm_drift_wins, mode=self.rm_drift_mode, qty=self.rm_drift_qty, 
+                                                    qty_funct=self.rm_drift_qty_funct, polyfit_deg=self.rm_drift_polyfit_deg, 
+                                                    rm_regions=self.rm_drift_rmregions, rm_regions_thr=self.rm_drift_rmregions_thr, 
+                                                    rm_regions_extend=self.rm_drift_rmregions_extend, plots=self.rm_drift_plots, plot_signame='x')
+            self.y_rmdrift = filters.rm_interpolate(y, wins=self.rm_drift_wins, mode=self.rm_drift_mode, qty=self.rm_drift_qty, 
+                                                    qty_funct=self.rm_drift_qty_funct, polyfit_deg=self.rm_drift_polyfit_deg, 
+                                                    rm_regions=self.rm_drift_rmregions, rm_regions_thr=self.rm_drift_rmregions_thr, 
+                                                    rm_regions_extend=self.rm_drift_rmregions_extend, plots=self.rm_drift_plots, plot_signame='y')
             return self.x_rmdrift.copy(), self.y_rmdrift.copy()
         else:
-            x_rmdrift = filters.rm_interpolate(x, pts=self.rm_drift_pts, mode=self.rm_drift_mode, qty=self.rm_drift_qty, qty_funct=self.rm_drift_qty_funct, plots=self.rm_drift_plots, plot_signame='x')
-            y_rmdrift = filters.rm_interpolate(y, pts=self.rm_drift_pts, mode=self.rm_drift_mode, qty=self.rm_drift_qty, qty_funct=self.rm_drift_qty_funct, plots=self.rm_drift_plots, plot_signame='y')
+            x_rmdrift = filters.rm_interpolate(x, wins=self.rm_drift_wins, mode=self.rm_drift_mode, qty=self.rm_drift_qty, 
+                                               qty_funct=self.rm_drift_qty_funct, polyfit_deg=self.rm_drift_polyfit_deg, 
+                                               rm_regions=self.rm_drift_rmregions, rm_regions_thr=self.rm_drift_rmregions_thr, 
+                                               rm_regions_extend=self.rm_drift_rmregions_extend, plots=self.rm_drift_plots, plot_signame='x')
+            y_rmdrift = filters.rm_interpolate(y, wins=self.rm_drift_wins, mode=self.rm_drift_mode, qty=self.rm_drift_qty, 
+                                               qty_funct=self.rm_drift_qty_funct, polyfit_deg=self.rm_drift_polyfit_deg, 
+                                               rm_regions=self.rm_drift_rmregions, rm_regions_thr=self.rm_drift_rmregions_thr, 
+                                               rm_regions_extend=self.rm_drift_rmregions_extend, plots=self.rm_drift_plots, plot_signame='y')
             return x_rmdrift, y_rmdrift
 
    
