@@ -169,7 +169,6 @@ def find_pauses(x, thr=0.7, extend=0, NFFT=2**10, plots=False, plot_signame=''):
 
 
 
-# WARNING added 'qty' and 'qty_funct'. TODO update callers:
 def rm_interpolate(sig, p0=None, p1=None, rm_regions=[], rm_regions_thr=0.5, rm_regions_extend=0, wins=10, mode='polyfit', polyfit_deg=3, qty='funct', qty_funct=np.median, plot_signame='', plots=False, plot_suptitle=None):
     ''' Remove from a signal its interpolation. 
         Divide sig in time windows ('wins'). In each, calculate a quantity (qty), eg: median, to produce points for the interpolation. Then interpolate these points and remove the interpolation from sig.
@@ -186,7 +185,7 @@ def rm_interpolate(sig, p0=None, p1=None, rm_regions=[], rm_regions_thr=0.5, rm_
         see also: 
         rm_interpolate_xy()
 
-        TODO: the way a point in its window is placed can be improved, now it is placed at the beginning of the window, but it could be placed in the middle or at the end.
+        TODO: the way an interpolating point is placed in its window can be improved, now it is placed at the beginning of the window, but it could be placed in the middle.
     '''
     # crop sig:
     sig = sig[p0:p1]
