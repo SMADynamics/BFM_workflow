@@ -48,8 +48,11 @@ def makeBestEllipse(x,y, nel=100):
     return xx,yy,center,a,b,phi
 
 
-def fitEllipse(x,y):
-    """Algorithm from Fitzgibbon et al 1996, Direct Least Squares Fitting of Ellipsees.  
+def fitEllipse_DEPRECATED(x,y):
+    """
+    DEPRECATED: sometimes it produces complex solution instead of real. Use fitEllipse() instead.
+    
+    Algorithm from Fitzgibbon et al 1996, Direct Least Squares Fitting of Ellipsees.  
     Formulated in terms of Langrangian multipliers, rewritten as a generalized eigenvalue problem. """
     x = x[:,np.newaxis]
     y = y[:,np.newaxis]
@@ -61,6 +64,47 @@ def fitEllipse(x,y):
     n = np.argmax(np.abs(E))
     a = V[:,n]
     return a
+    
+
+
+def fitEllipse(x, y):
+    """GTP. Direct least-squares ellipse fit via the generalized eigenproblem."""
+    from scipy.linalg import eig as generalized_eig
+    x = np.asarray(x, dtype=float)[:, np.newaxis]
+    y = np.asarray(y, dtype=float)[:, np.newaxis]
+    D = np.hstack((x*x, x*y, y*y, x, y, np.ones_like(x)))
+    S = D.T @ D
+    C = np.zeros((6, 6), dtype=float)
+    C[0, 2] = 2.0
+    C[2, 0] = 2.0
+    C[1, 1] = -1.0
+    # Solve S a = lambda C a directly, instead of eig(inv(S) @ C).
+    evals, evecs = generalized_eig(S, C, check_finite=False)
+    evals = np.real_if_close(evals, tol=1000)
+    evecs = np.real_if_close(evecs, tol=1000)
+    valid = []
+    for idx in range(evecs.shape[1]):
+        vec = evecs[:, idx]
+        # Ignore genuinely complex solutions.
+        if np.iscomplexobj(vec) and not np.allclose(np.imag(vec), 0.0, atol=1e-10):
+            continue
+        vec = np.real(vec)
+        A, B, Cc = vec[0], vec[1], vec[2]
+        # Ellipse constraint: 4AC - B^2 > 0
+        if 4.0 * A * Cc - B * B > 0:
+            lam = evals[idx]
+            if np.iscomplexobj(lam) and not np.isclose(np.imag(lam), 0.0, atol=1e-10):
+                continue
+            lam = float(np.real(lam))
+            if np.isfinite(lam):
+                valid.append((abs(lam), vec))
+    if not valid:
+        raise ValueError("fitEllipse(): no valid real ellipse solution found")
+    # Pick the valid ellipse mode with the smallest absolute generalized eigenvalue.
+    _, a = min(valid, key=lambda item: item[0])
+    # Normalize for stable downstream formulas.
+    return a / np.linalg.norm(a)
+    
 
 
 def ellipse_center(a):
