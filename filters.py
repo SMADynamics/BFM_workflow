@@ -9,57 +9,7 @@ import scipy.signal
 
 
 
-#TODO adjust and use:
-# def correct_sig_modulation(sig, angle_turns, method='poly', polydeg=10, add='mean', interp_pts=100, plots=False, plots_figname='', plot_ss=30, plots_test=False, return_all=False):
-#     '''correct the 1-turn periodic modulation (for a signal of the BFM eg: omega, z, radius), 
-#        by removing a polynome fit of sig Vs mod(angle_turns,1).
-#          sig, angle_turns: any signal and relative angle_turns trace (they have same length)
-#          method: 'poly' polynome fit, 'interp' interpolation
-#          polydeg : polyn degree to fit
-#          add : ['mean', 'max'] value to add to the corrected signal. If add==None, then np.mean(sig) is added. But if sig=radius of xy traj, it should  be different TODO what?
-#          interp_pts : numb of point to use to interpolate
-#          plot_ss: subsample when plotting
-#     return signal corrected
-#     '''
-#     if add == 'mean':
-#         _add = np.mean(sig)
-#     # angle turns in 0,1:
-#     am  = np.mod(angle_turns - angle_turns[0], 1)
-#     if method == 'poly':
-#         # polyn fit:
-#         pf = np.polyfit(am, sig, polydeg)
-#         po = np.poly1d(pf)
-#         if add == 'max':
-#             _add = np.max(po(am))
-#         # sig corrected:
-#         sig_corr = sig - po(am) + _add
-#     elif method == 'interp':
-#         sig_corr, interp_f = rm_interpolate_xy(am, sig, npts=interp_pts, add=add, plots=plots)
-#     if plots :
-#         if plots_figname:
-#             plt.figure(plots_figname, clear=True)
-#         else:
-#             plt.figure('correct_sig_modulation', clear=True)
-#         plt.subplot(321)
-#         plt.plot(sig[::plot_ss], '-', alpha=0.8, label='sig.raw')
-#         plt.plot(sig_corr[::plot_ss], '-', alpha=0.6, label='sig.corr')
-#         plt.legend(fontsize=9)
-#         plt.subplot(322)
-#         plt.plot(angle_turns[::plot_ss], '.', ms=2, label='angle_turns')
-#         plt.legend(fontsize=9)
-#         plt.subplot(312)
-#         if method == 'poly':
-#             plt.plot(am[::plot_ss], sig[::plot_ss], ',', ms=1, alpha=0.3, label='sig.raw')
-#             plt.plot(am[::plot_ss], po(am)[::plot_ss], ',', ms=2, label='poly.fit')
-#         plt.xlabel('angle_turns mod 1')
-#         plt.legend(fontsize=9)
-#         plt.subplot(313)
-#         if method == 'poly':
-#             plt.plot(am[::plot_ss], sig_corr[::plot_ss], ',', ms=1, alpha=0.3, label='sig.corr.')
-#         plt.xlabel('angle_turns mod 1')
-#         plt.legend(fontsize=9)
-#         plt.tight_layout()
-#     return sig_corr
+
 
 
 # TODO: careful I see arteftacts, at the beg and end of the filtered trace, few points out of the trace, going down. rm avg does not rm arteftacts.

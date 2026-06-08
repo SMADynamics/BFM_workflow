@@ -3,6 +3,56 @@ import matplotlib.pyplot as plt
 from numpy.linalg import eig, inv
 
 
+
+def stretch_ellipse_selected_pts(x,y, p0=None, p1=None, stretchit=True, plots=False, path_save=None):
+    ''' fit ellipse on selected points x[p0:p1], y[p0:p1], 
+    useful when x,y have pauses 
+    decide if stretch it to be circular, center to origin. 
+    When stretchit=True stretches the short axis to become equal to the long axis '''
+    # fit ellipse on partial xy [p0:p1]:
+    xx0, yy0, center0, a, b, phi = makeBestEllipse(x[p0:p1], y[p0:p1], nel=50)
+    # rotate full xy [:] so major axis is vertical: (check if this is always the case :NO!)
+    x_rot, y_rot = rotateArray(np.array((x,y)), -phi)
+    # fit again an ellipse on the rotated partial xy [p0:p1]:
+    xx, yy, center, a, b, phi = makeBestEllipse(x_rot[p0:p1], y_rot[p0:p1], nel=50) 
+    # translate to 0,0 and scale x to make a circle from the ellipse:
+    if a>b:
+        x_rot = (x_rot - center[0])
+        if stretchit:
+            y_rot = (y_rot - center[1])*a/b
+        else:
+            y_rot = (y_rot - center[1])
+    else:
+        if stretchit:
+            x_rot = (x_rot - center[0])*b/a
+        else:
+            x_rot = (x_rot - center[0])
+        y_rot = (y_rot - center[1])
+    # fit again on the scaled circular x_rot y_rot data:
+    xx, yy, center, a, b, phi = makeBestEllipse(x_rot[p0:p1], y_rot[p0:p1], nel=50) 
+    if plots:
+        plt.figure('stretch_ellipse_selected_pts', clear=True)
+        plt.subplot(221)
+        plt.plot(x, y, ',', ms=1, alpha=0.1)
+        plt.plot(x[p0:p1], y[p0:p1], ',', ms=1, alpha=0.1)
+        plt.plot(xx0, yy0,'-')
+        plt.title('Original', fontsize=9)
+        plt.axis('equal')
+        plt.subplot(222)
+        plt.plot(x_rot, y_rot, ',', ms=1, alpha=0.1)
+        plt.plot(x_rot[p0:p1], y_rot[p0:p1], ',', ms=1, alpha=0.1)
+        plt.plot(xx,yy,'-')
+        plt.title('Rotated', fontsize=9)
+        plt.axis('equal')
+        plt.subplot(212)
+        plt.plot(x, alpha=0.5)
+        plt.plot(y, alpha=0.5)
+        plt.axvspan(p0 if p0 else 0, p1 if p1 else -1, color='gray', alpha=0.2)
+
+    return x_rot, y_rot, a, b
+
+
+
 def stretch_ellipse(x,y, plots=False):
     ''' fit ellipse, stretch it to be circular, center to origin. 
     stretches the short axis to become equal to the long axis '''
@@ -34,6 +84,7 @@ def stretch_ellipse(x,y, plots=False):
     return x_out, y_out #, a, b
 
 
+
 def makeBestEllipse(x,y, nel=100):
     ''' x,y : input position data
     nel: number of pts in best ellipse
@@ -46,6 +97,7 @@ def makeBestEllipse(x,y, nel=100):
     xx = center[0] + a*np.cos(epts)*np.cos(phi) - b*np.sin(epts)*np.sin(phi)
     yy = center[1] + a*np.cos(epts)*np.sin(phi) + b*np.sin(epts)*np.cos(phi)
     return xx,yy,center,a,b,phi
+
 
 
 def fitEllipse_DEPRECATED(x,y):
