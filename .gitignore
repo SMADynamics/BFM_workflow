@@ -1,0 +1,8 @@
+*.tdms
+*.pt
+*.npy
+*.npz
+*.mat
+*.csv
+*.swp
+*.pyc

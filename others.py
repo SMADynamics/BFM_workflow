@@ -4,8 +4,9 @@ import scipy.signal
 
 
 ##################################################################################################################
-## used for verapamil, and possibly new here in filters.py. 
-# Remove pauses in xy by clickin in a gui or by differenet other ways:
+# The following has been used for verapamil. 
+# Remove pauses in xy by clicking in a gui or by different other ways.
+# Possibly it can be merged in filters.py. 
 
 def find_pauses(x, thr=0.7, extend=0, NFFT=2**10, plots=False, plot_signame=''):
     ''' find pauses in sinusoidal-like signal x, by  thresholding the sum(axis=0) of the spectrogram'''
@@ -72,18 +73,17 @@ def rm_regions_gui(x, plot_signame=''):
 
 def rm_interpolate(sig, p0=None, p1=None, rm_regions=[], rm_regions_thr=0.5, rm_regions_extend=0, wins=10, mode='polyfit', polyfit_deg=3, qty='funct', qty_funct=np.median, plot_signame='', plots=False, plot_suptitle=None, return_metadata=False):
     ''' Remove from a signal its interpolation. 
-        Divide sig in time windows ('wins'). In each, calculate a quantity (qty), eg: median, to produce points for the interpolation. Then interpolate these points and remove the interpolation from sig.
-            p0,p1 : idx to crop sig[p0:p1] before interpolation.
-            rm_regions : remove regions of sig between indexes a_i and b_i, before interpolation. Useful to remove pauses.
+        Divide sig in time windows ('wins'). In each, calculate a quantity (qty), eg: median, to produce points for the interpolation. Then interpolate these points, and remove the interpolation from sig.
+            - p0,p1 : idx to crop sig[p0:p1] before interpolation.
+            - rm_regions : remove regions of sig between indexes a_i and b_i, before interpolation. Useful to remove pauses.
                          Either a list of tuples [(a1,b1),(a2,b2),...] to remove from sig before calculating the interpolation. 
                          Or str 'auto', to use find_pauses(..., thr=rm_regions_thr) to automatically find pauses.
                          Or str 'gui', to use rm_regions_gui() to manually select regions to remove.
                          rm_regions_extend : extend the regions to remove by this factor (eg: 0.5 means extend by 50% before and after the detected region).
-            qty : ['median'|'min'|'max'|'funct'] the quantity to calculate in each window
-                  to produce the points for the interpolation.
-            qty_funct : if qty='funct', then 'qty_funct' must be a function (eg: qty_funct = np.mean)
-            mode : ['spline' | 'linear' | 'polyfit' | 'none' ] method to use for interpolation. 'none' means no correction, just return the cropped sig.
-            polyfit_deg : if mode=='polyfit', degree of the polynome to fit
+            - qty : ['median'|'min'|'max'|'funct'] the quantity to calculate in each window to produce the points for the interpolation.
+            - qty_funct : if qty='funct', then 'qty_funct' must be a function (eg: qty_funct = np.mean)
+            - mode : ['spline' | 'linear' | 'polyfit' | 'none' ] method to use for interpolation. 'none' means no correction, just return the cropped sig.
+            - polyfit_deg : if mode=='polyfit', degree of the polynome to fit
             
         see also: 
         rm_interpolate_xy()
@@ -144,7 +144,7 @@ def rm_interpolate(sig, p0=None, p1=None, rm_regions=[], rm_regions_thr=0.5, rm_
         sig_out = sig
         interp = np.zeros_like(sig)
     else:
-        raise ValueError('rm_interpolate_xy(): ERROR "mode" not well defined.')
+        raise ValueError('rm_interpolate(): ERROR "mode" not well defined.')
     if plots:
         if len(sig) > 500000:
             dw = 50

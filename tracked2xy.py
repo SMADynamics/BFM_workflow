@@ -13,7 +13,10 @@ import openTDMS
 
 class Tracked_2_XY():
     
-    def __init__(self, trckd_file='', roi_num=0, c0=0, c1=None, plots_xy=False):
+    def __init__(self, trckd_file='', 
+                 roi_num=0, 
+                 c0=0, c1=None, 
+                 plots_xy=False):
         ''' get x,y of the bead fropm tracked file (FP or TF tracker)'''
         self.trckd_file = trckd_file
         self.roi_num = roi_num
@@ -21,6 +24,7 @@ class Tracked_2_XY():
         self.c1 = c1
         print(f'Tracked_2_XY.__init__(): trckd_file: {trckd_file}; roi_num: {roi_num}; c0: {c0}; c1: {c1}')
         self.workflow(plots_xy=plots_xy)
+        print(f'Tracked_2_XY.__init__(): Done.')
 
 
     def workflow(self, plots_xy=False):
@@ -95,16 +99,17 @@ class Tracked_2_XY():
 
     def plots_xy(self):
         fig = plt.figure('Tracked_2_XY.plots_xy', clear=True)
-        ax1 = fig.add_subplot(321)
+        ax1 = fig.add_subplot(311)
         ax2 = fig.add_subplot(312)
         ax3 = fig.add_subplot(313)
         ax1.plot(self.x, self.y, ',', alpha=0.2)
+        ax1.axis('equal')
         ax1.set_xlabel('x (px)')
         ax1.set_ylabel('y (px)')
-        ax2.plot(self.x, ',', alpha=0.4)
+        ax2.plot(self.x, ',', alpha=0.2)
         ax2.set_ylabel('x (px)')
         ax2.set_xlabel('idx')
-        ax3.plot(self.y, ',', alpha=0.4)
+        ax3.plot(self.y, ',', alpha=0.2)
         ax3.set_ylabel('y (px)')
         ax3.set_xlabel('idx')
         # Create a secondary x-axis for time

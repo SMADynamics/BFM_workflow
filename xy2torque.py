@@ -23,7 +23,7 @@ class XY_2_Torque():
                  rm_outliers_win=5,
                  rm_outliers_plots=False,
                  stretch_xy_plots=False, 
-                 rm_drift_rmregions='auto',
+                 rm_drift_rmregions=[],
                  rm_drift_rmregions_extend=0,
                  rm_drift_rmregions_thr=0.7,
                  rm_drift_mode='polyfit',
@@ -32,7 +32,7 @@ class XY_2_Torque():
                  rm_drift_qty='median',
                  rm_drift_qty_funct=np.median,
                  rm_drift_plots=False, 
-                 dist_beadsurf_wall_m=50e-6, #### BROKEN??? this was changed from "dist_beadsurf_wall" 
+                 dist_beadsurf_wall_m=50e-6,
                  filter_name='savgol', 
                  filter_win=101,
                  plots=False,
@@ -70,7 +70,8 @@ class XY_2_Torque():
             rm_drift_qty_funct         : a call to a function, used to calculate the quantity in each window, eg: rm_drift_qty_funct=np.mean. 
                                          Use of median,min,max is already in rm_drift_qty.
             rm_drift_polyfit_deg [3]   : degree of the polynomial for 'polyfit' drift removal
-            rm_drift_rmregions ['auto'] : 'auto' or list of (start,end) pts to remove from the drift calculation
+            rm_drift_rmregions ['auto'] : 'auto' or list of (start,end) pts to remove from the drift calculation, see filters.rm_interpolate() for details. 
+                                         Useful to remove pauses from the drift calculation.
             rm_drift_rmregions_thr     : threshold for automatic detection of regions to remove
             rm_drift_rmregions_extend  : extend the regions to remove by this factor (eg. 0.5 will extend each region by 50% on each side)
             stretch_xy_plots           : plots relative to the xy stretch 
@@ -126,7 +127,7 @@ class XY_2_Torque():
         y -= np.median(y)
         # make corrections in given order (by correction_functions_order):
         for funct in self.correction_functions_order:
-            print(f'XY_2_Torque.workflow(): applying correction {funct} ...')
+            print(f'XY_2_Torque.workflow(): applying correction: "{funct}" ...')
             x,y = self.correction_functions[funct](x,y)
         # store corrected x,y
         self.x_corr = x

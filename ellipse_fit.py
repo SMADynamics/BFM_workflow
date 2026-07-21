@@ -100,7 +100,7 @@ def makeBestEllipse(x,y, nel=100):
 
 
 
-def fitEllipse_DEPRECATED(x,y):
+def fitEllipse__ORIGINAL(x,y):
     """
     DEPRECATED: sometimes it produces complex solution instead of real. Use fitEllipse() instead.
     
@@ -109,7 +109,7 @@ def fitEllipse_DEPRECATED(x,y):
     x = x[:,np.newaxis]
     y = y[:,np.newaxis]
     D =  np.hstack((x*x, x*y, y*y, x, y, np.ones_like(x)))
-    S = np.dot(D.T,D)
+    S = np.dot(D.T, D)
     C = np.zeros([6,6])
     C[0,2] = C[2,0] = 2; C[1,1] = -1
     E, V =  eig(np.dot(inv(S), C))
@@ -119,9 +119,12 @@ def fitEllipse_DEPRECATED(x,y):
     
 
 
-def fitEllipse(x, y):
+def fitEllipse__GTP1(x, y):
     """GTP. Direct least-squares ellipse fit via the generalized eigenproblem."""
     from scipy.linalg import eig as generalized_eig
+    # rm mean from x,y:
+    # x = x - np.mean(x)
+    # y = y - np.mean(y)
     x = np.asarray(x, dtype=float)[:, np.newaxis]
     y = np.asarray(y, dtype=float)[:, np.newaxis]
     D = np.hstack((x*x, x*y, y*y, x, y, np.ones_like(x)))
@@ -157,6 +160,96 @@ def fitEllipse(x, y):
     # Normalize for stable downstream formulas.
     return a / np.linalg.norm(a)
     
+    
+
+def fitEllipse(x, y):
+    """
+    GTP. Stable direct least-squares ellipse fit (Halir-Flusser style).
+    Returns conic coefficients [A, B, C, D, E, F] for:
+        A x^2 + B x y + C y^2 + D x + E y + F = 0
+    
+    TODO if complex output, add:
+            tol_imag = 1e-10
+            eps_cond = 1e-12
+            candidates = []
+            for j in range(eigvecs.shape[1]):
+                v = eigvecs[:, j]
+                if np.iscomplexobj(v):
+                    if np.max(np.abs(np.imag(v))) > tol_imag:
+                        continue
+                    v = np.real(v)
+                else:
+                    v = np.asarray(v, dtype=float)
+                cond = 4.0 * v[0] * v[2] - v[1] * v[1]
+                if cond > eps_cond and np.all(np.isfinite(v)):
+                    candidates.append(v)
+            if not candidates:
+                raise ValueError("fitEllipse(): no valid real ellipse eigenvector")
+    """
+    x = np.asarray(x, dtype=float).ravel()
+    y = np.asarray(y, dtype=float).ravel()
+
+    if x.size != y.size or x.size < 6:
+        raise ValueError("fitEllipse(): need same-length x,y with at least 6 points")
+
+    # Normalize for conditioning
+    mx, my = np.mean(x), np.mean(y)
+    sx, sy = np.std(x), np.std(y)
+    if sx == 0 or sy == 0:
+        raise ValueError("fitEllipse(): degenerate input (zero variance)")
+
+    xn = (x - mx) / sx
+    yn = (y - my) / sy
+
+    D1 = np.column_stack((xn * xn, xn * yn, yn * yn))
+    D2 = np.column_stack((xn, yn, np.ones_like(xn)))
+
+    S1 = D1.T @ D1
+    S2 = D1.T @ D2
+    S3 = D2.T @ D2
+
+    # T = -inv(S3) S2^T, M = inv(C1) (S1 + S2 T)
+    T = -np.linalg.solve(S3, S2.T)
+    M = S1 + S2 @ T
+    C1 = np.array([[0.0, 0.0, 2.0],
+                   [0.0, -1.0, 0.0],
+                   [2.0, 0.0, 0.0]])
+
+    eigvals, eigvecs = np.linalg.eig(np.linalg.solve(C1, M))
+    eigvecs = np.real_if_close(eigvecs, tol=1000)
+
+    # Keep only ellipse solutions: 4ac - b^2 > 0
+    cond = 4.0 * eigvecs[0, :] * eigvecs[2, :] - eigvecs[1, :] ** 2
+    idx = np.where(cond > 0)[0]
+    if idx.size == 0:
+        # Soft fallback for near-degenerate numerics
+        idx = [int(np.argmax(cond))]
+        if cond[idx[0]] <= 0:
+            raise ValueError("fitEllipse(): no valid real ellipse solution found")
+
+    a1 = np.real(eigvecs[:, idx[0]])
+    a2 = T @ a1
+    an = np.concatenate((a1, a2))  # normalized-space conic coeffs
+
+    # Denormalize coefficients back to original x,y
+    A, B, C, D, E, F = an
+    Ao = A / (sx * sx)
+    Bo = B / (sx * sy)
+    Co = C / (sy * sy)
+    Do = D / sx - 2.0 * A * mx / (sx * sx) - B * my / (sx * sy)
+    Eo = E / sy - 2.0 * C * my / (sy * sy) - B * mx / (sx * sy)
+    Fo = (
+        F
+        + A * mx * mx / (sx * sx)
+        + B * mx * my / (sx * sy)
+        + C * my * my / (sy * sy)
+        - D * mx / sx
+        - E * my / sy
+    )
+
+    a = np.array([Ao, Bo, Co, Do, Eo, Fo], dtype=float)
+    return a / np.linalg.norm(a)
+
 
 
 def ellipse_center(a):
