@@ -10,7 +10,7 @@ Example:
     # file points to the folder:
     file_to_open = '/home/francesco/ADYN/DATA/Amelie/240626/CL_240626_161019/'
     # or to 'trajectory.pt' file:
-    file_to_open = '/home/francesco/CL_241202_144019/01/trajectory.pt'
+    file_to_open = '/home/francesco/ADYN/DATA/Anais/240322/CL_240322_175742/0/trajectory.pt'
     
     # FP tracker (Old): file should be the *_Trckd.tdms file name, eg:
     file_to_open = '/home/francesco/ADYN/DATA/Anais/201008/CL_201008_173841_Trckd.tdms'
@@ -23,14 +23,15 @@ Example:
                c1=None,     
                plots_xy=1,  
                bead_diam_m=1e-6,    
-               dist_beadsurf_wall=10e-9,    
+               dist_beadsurf_wall_m=10e-9,    
                umppx=0.1,                       # um to pixel
                correction_functions_order=['rm_outliers', 'rm_drift', 'stretch_xy'], 
                rm_outliers_plots=True,  
                rm_drift_mode='polyfit',         # ['spline' | 'linear' | 'polyfit']
                rm_drift_polyfit_deg=3,  
                rm_drift_wins=1001,              # win to define one interpolating point
-               rm_drift_rmregions='',           # [(a1,b1), ..] or 'auto'. Remove bad regions of the trace (eg with pauses)
+               rm_drift_rmregions=[],           # [] or [(a1,b1), ..] or 'auto' or 'gui'. 
+                                                # Remove bad regions of the trace (eg with pauses) before drift correction.
                rm_drift_rmregions_thr=0.8, 
                rm_drift_rmregions_extend=0.1,
                rm_drift_plots=True, 
@@ -83,7 +84,7 @@ Example:
         'remove_drift_funct',
         'stretch_xy_funct',
 
-tracked2xy.py : extract from (FP or TF) tracked data (foldersand files) all the relevant information (x,y, metadata)
+tracked2xy.py : extract from (FP or TF) tracked data (folders and files) all the relevant information (x,y, metadata)
 
 xy2torque.py : from xy data (coming from tracked2xy.py), calculate speed and torque.
 
@@ -95,7 +96,7 @@ Drift correction is controlled by the 'rm_drift_*' parameters:
     - rm_drift_polyfit_deg : degree of the polynomial fit if rm_drift_mode is 'polyfit'.
     - rm_drift_qty='median' : quantity to calculate in each window, can be ['median'|'min'|'max'|'funct'].
     - rm_drift_qty_funct : function to use if rm_drift_qty is 'funct' (eg. np.mean))
-    - rm_drift_rmregions : [(a1,b1), (a2,b2), ..] or 'auto'. Define bad regions (eg, pauses) of the trace to remove.
+    - rm_drift_rmregions : [] or [(a1,b1), (a2,b2), ..] or 'auto' or 'gui'. Define bad regions (eg, pauses) of the trace to remove.
     - rm_drift_rmregions_thr : threshold if rm_drift_rmregions is 'auto'
     - rm_drift_rmregions_extend : extension of the bad regions if rm_drift_rmregions is 'auto' (eg, 0.1).
     - rm_drift_plots : make plots
